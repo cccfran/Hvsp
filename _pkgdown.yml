@@ -1,0 +1,27 @@
+title:  Hierarchical Vintage Sparse PCA (Hvsp)
+desc: Main
+url: https://github.com/cccfran/SuperCENT/
+template:
+  bootstrap: 5
+  params:
+    bootswatch: flatly
+reference:
+- title: "Hierarchical Vintage Sparse PCA (Hvsp)"
+  desc: >
+    Function for Hvsp
+- contents:
+  - Hvsp
+- title: "Hierarchical community detection (HCD) by Li et al. (2020)"
+  desc: >
+    Functions from the original HCD package
+- contents:
+  - HCD-package
+  - BTSBM
+  - HCD
+  - gen.A.from.P
+- title: "Citation network data"
+  desc: >
+    The 3-core of the largest connected component of the statistician citation network data by Ji and Jin (2016).
+    It is the same as the `Citation3Core.Rda` from the [HCD github repo](https://github.com/tianxili/HCD)
+- contents:
+  - citation
