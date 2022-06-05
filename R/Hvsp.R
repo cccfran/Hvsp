@@ -31,12 +31,14 @@
 #' }
 #' @export
 #' @examples
+#' \dontrun{
 #' tt <- BTSBM(1024, 2, c(1, .3, .09), 50)
 #' A <- tt$A.list[[1]]
 #' Hvsp(A)
 #'
 #' data(citation)
 #' Hvsp(citation)
+#' }
 Hvsp <- function(A, stopping="NB", n.min=25, D = NULL, notree=TRUE, ...) {
 
   HCD(A,method="vsp", stopping=stopping, reg=FALSE, n.min=n.min, D=D, notree=notree, ...)

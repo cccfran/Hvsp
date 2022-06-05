@@ -175,7 +175,9 @@ gen.A.from.P <- function(P,undirected=TRUE){
 #' }
 #' @export
 #' @examples
+#' \dontrun{
 #' BTSBM(1024, 2, c(1, .3, .09), 50)
+#' }
 BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
   K <- 2^d
   #outin <- beta
@@ -257,12 +259,14 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
 #' }
 #' @export
 #' @examples
+#' \dontrun{
 #' tt <- BTSBM(1024, 2, c(1, .3, .09), 50)
 #' A <- tt$A.list[[1]]
 #' HCD(A)
 #'
 #' data(citation)
 #' HCD(citation, method="SS", stopping="NB", notree=F)
+#' }
 HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TRUE, ...){
   n <- nrow(A)
   ncl <- 0
