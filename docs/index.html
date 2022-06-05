@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <meta name="description" content="Hierachical vintage sparse PCA that combines hierarchical clustering and vintage sparse PCA. The package is built upon the HCD package by Li et al.">
-<title>Hierarchical Vintage Sparse PCA (Hvsp) • Hierarchical Vintage Sparse PCA (Hvsp)</title>
+<title>Hierarchical Vintage Sparse PCA (Hvsp) • Hvsp</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.1.0/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.1.0/bootstrap.bundle.min.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
@@ -24,7 +24,7 @@
 
     <nav class="navbar fixed-top navbar-dark navbar-expand-lg bg-primary"><div class="container">
     
-    <a class="navbar-brand me-2" href="index.html">Hierarchical Vintage Sparse PCA (Hvsp)</a>
+    <a class="navbar-brand me-2" href="index.html">Hvsp</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
@@ -50,8 +50,43 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9">
-Hierachical vintage sparse PCA that combines hierarchical clustering and vintage sparse PCA. The package is built upon the HCD package by Li et al.
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="hvsp">Hvsp<a class="anchor" aria-label="anchor" href="#hvsp"></a>
+</h1></div>
+<!-- badges: start --><!-- badges: end --><p>This package implements the Hierarchical Vintage Sparse PCA (<code>Hvsp</code>) methodology and is built upon the <a href="https://cran.r-project.org/web/packages/HCD/index.html" class="external-link"><code>HCD</code> package</a>.</p>
+<ul><li>
+<code><a href="reference/Hvsp.html">Hvsp()</a></code> produces the centrality estimation and regression coefficient estimation of the commonly used two-stage procedure.</li></ul>
+<p>It also includes functions in the <code>HCD</code> package:</p>
+<ul>
+<li>
+<code><a href="reference/HCD.html">HCD()</a></code> applies the hierarchical community detection (HCD) by Li et al. (2020).</li>
+<li>
+<code><a href="reference/BTSBM.html">BTSBM()</a></code> generates network from the binary tree stochastic block model by Li et al. (2020).</li>
+</ul>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>You can install the development version of <code>Hvsp</code> from <a href="https://github.com/Hvsp" class="external-link">GitHub</a> with:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="st"><a href="https://devtools.r-lib.org/" class="external-link">"devtools"</a></span><span class="op">)</span><span class="op">)</span><span class="op">{</span>
+    <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span>
+<span class="op">}</span>
+<span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/remote-reexports.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"cccfran/Hvsp"</span><span class="op">)</span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
+<p>This is a basic example which shows you how to use <code>Hvsp</code> on a network:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">Hvsp</span><span class="op">)</span>
+
+<span class="co"># load a citation network</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">citation</span><span class="op">)</span>
+
+<span class="co"># apply citation network</span>
+<span class="fu"><a href="reference/Hvsp.html">Hvsp</a></span><span class="op">(</span><span class="va">citation</span><span class="op">)</span></code></pre></div>
+</div>
+</div>
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
