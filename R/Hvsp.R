@@ -36,7 +36,7 @@
 #' Hvsp(A)
 #'
 #' data(citation)
-#' Hvsp(citation, method="SS", stopping="NB", notree=F)
+#' Hvsp(citation)
 Hvsp <- function(A, stopping="NB", n.min=25, D = NULL, notree=TRUE, ...) {
 
   HCD(A,method="vsp", stopping=stopping, reg=FALSE, n.min=n.min, D=D, notree=notree, ...)
