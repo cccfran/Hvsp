@@ -328,15 +328,20 @@ HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TR
     community.bin.sim.mat <- NULL
   }
   P.est <- SBM.estimate(A,labels)
-  result <- list(result = list(labels=labels,
-                               ncl=ncl,
-                               cluster.tree=cluster.tree,
-                               P=P.est,
-                               node.bin.sim.mat=node.bin.sim.mat,
-                               comm.bin.sim.mat=community.bin.sim.mat,
-                               tree.path=tree.path))
-  if(method == "vsp") result <- list(result=result,
-                                     cent=clusters$cent)
+  result_list <- list(labels=labels,
+                      ncl=ncl,
+                      cluster.tree=cluster.tree,
+                      P=P.est,
+                      node.bin.sim.mat=node.bin.sim.mat,
+                      comm.bin.sim.mat=community.bin.sim.mat,
+                      tree.path=tree.path)
+  result <- list(result = result_list)
+  class(result) <- "HCD"
+  if(method == "vsp") {
+    result <- list(result = result_list,
+                   cent = clusters$cent)
+    class(result) <- "Hvsp"
+  }
 
   return(result)
 }
