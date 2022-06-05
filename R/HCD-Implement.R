@@ -1,9 +1,3 @@
-library(RSpectra)
-library(irlba)
-library(data.tree)
-library(data.table)
-library(randnet)
-
 ## the spectral check of non-backtracking matrix for stopping rule
 
 NB.check <- function(A){
@@ -148,13 +142,28 @@ gen.A.from.P <- function(P,undirected=TRUE){
   }
 }
 
-
-## n: dimension of the network
-## d: number of layers until leaves (excluding the root)
-## a.seq: sequence a_r
-## lambda: average node degree, only used when alpha is not provided.
-## alpha: the common scaling of the a_r sequence, so at the end, essentially the a_r sequence is a.seq*alpha
-## N: number of networks one wants to generate from the same model
+#' Binary Tree Stochastic Block Models (BTSBM)
+#'
+#' Simulated network from BTSBM.
+#'
+#' @param n dimension of the network
+#' @param d number of layers until leaves (excluding the root)
+#' @param a.seq sequence a_r
+#' @param lambda average node degree, only used when alpha is not provided.
+#' @param alpha the common scaling of the a_r sequence, so at the end, essentially the a_r sequence is a.seq*alpha
+#' @param N number of networks one wants to generate from the same model
+#' @return Output a \code{HCD} object
+#' \describe{
+#'  \item{A.list}{list of simulated networks}
+#'  \item{B}{clusters' probability matrix}
+#'  \item{label}{cluster label}
+#'  \item{P}{nodes' probability matrix}
+#'  \item{comm.sim.mat}{clusters' similarity matrix}
+#'  \item{node.sim.mat}{nodes' similarity matrix}
+#' }
+#' @export
+#' @examples
+#' BTSBM(1024, 2, c(1, .3, .09), 50)
 BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
   K <- 2^d
   #outin <- beta
@@ -192,27 +201,50 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
   for(I in 1:N){
     A.list[[I]] <- gen.A.from.P(P,undirected=TRUE)
   }
-  return(list(A.list=A.list,B=B,label=g,P=P,comm.sim.mat=comm.sim.mat,node.sim.mat=node.sim.mat))
+  ret_list <- list(A.list=A.list,B=B,label=g,P=P,comm.sim.mat=comm.sim.mat,node.sim.mat=node.sim.mat)
+  class(ret_list) <- "BTSBM"
+
+  return(ret_list)
 }
 
 
 
 
 
-
-## HCD
-## A: adjacency matrix. Can be standard R matrix or dsCMatrix (or other type in package Matrix)
-## method: splitting method. "SS" (default) -- sign splitting, "SC" -- spectral clustering
-########## stopping: stopping rule. "NB" (default) -- non-backtracking matrix spectrum, "ECV" -- edge cross-validation, "Fix"-- fixed D layers of partitioning
-########## ECV is nonparametric rank evaluation by cross-validation -- a more generally applicable approach
-########## without assuming SBM or its variants. Also available for weighted networks.
-########## It is believed to be more robust than NB but less effective if the true model is close to BTSBM.
-########## ECV is computationally much more intensive.
-## reg: whether regularization is needed.
-########## Set it to be TRUE will add reguarlization, which help the performance on sparse networks, but it will make the computation slower.
-## n.min: the algorithm will stop splitting if the current size is <= 2*n.min.
-## D: the number of layers to partition, if stopping=="Fix".
-## notree: if TRUE, will not produce the data.tree object or the community similarity matrix. Only the cluster label and the tree path strings will be returned. This typically makes the runing faster.
+#' Hierarchical community detection (HCD)
+#'
+#' The hierarchical community detection (HCD) by Li et al. (2020).
+#'
+#' @param A input adjacency matrix. Can be standard R matrix or dsCMatrix (or other type in package Matrix)
+#' @param method  splitting method. "SS" (default) -- sign splitting, "SC" -- spectral clustering
+#' @param stopping  stopping rule. "NB" (default) -- non-backtracking matrix spectrum, "ECV" -- edge cross-validation, "Fix"-- fixed D layers of partitioning
+#' ECV is nonparametric rank evaluation by cross-validation -- a more generally applicable approach
+#' without assuming SBM or its variants. Also available for weighted networks.
+#' It is believed to be more robust than NB but less effective if the true model is close to BTSBM.
+#' ECV is computationally much more intensive.
+#' @param reg  whether regularization is needed.
+#' Set it to be TRUE will add reguarlization, which help the performance on sparse networks, but it will make the computation slower.
+#' @param n.min  the algorithm will stop splitting if the current size is <= 2*n.min.
+#' @param D  the number of layers to partition, if stopping=="Fix".
+#' @param notree  if TRUE, will not produce the data.tree object or the community similarity matrix. Only the cluster label and the tree path strings will be returned. This typically makes the runing faster.
+#' @return Output a \code{HCD} object
+#' \describe{
+#'  \item{labels}{clustering label}
+#'  \item{ncl}{number of clusters}
+#'  \item{cluster.tree}{cluster tree from data.tree}
+#'  \item{P}{estimated probability matrix}
+#'  \item{node.bin.sim.mat}{nodes' similarity matrix}
+#'  \item{comm.bin.sim.mat}{clusters' similarity matrix}
+#'  \item{tree.path}{nodes' tree path}
+#' }
+#' @export
+#' @examples
+#' tt <- BTSBM(1024, 2, c(1, .3, .09), 50)
+#' A <- tt$A.list[[1]]
+#' HCD(A)
+#'
+#' data(citation)
+#' HCD(citation, method="SS", stopping="NB", notree=F)
 HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TRUE){
   n <- nrow(A)
   ncl <- 0
