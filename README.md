@@ -22,7 +22,7 @@ It also includes functions in the `HCD` package:
 ## Installation
 
 You can install the development version of `Hvsp` from
-[GitHub](https://github.com/Hvsp) with:
+[GitHub](https://github.com/cccfran/Hvsp) with:
 
 ``` r
 if (!require("devtools")){

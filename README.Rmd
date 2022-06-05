@@ -1,5 +1,7 @@
 ---
-output: github_document
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -31,7 +33,7 @@ It also includes functions in the `HCD` package:
 
 ## Installation
 
-You can install the development version of `Hvsp` from [GitHub](https://github.com/Hvsp) with:
+You can install the development version of `Hvsp` from [GitHub](https://github.com/cccfran/Hvsp) with:
 
 ```{r}
 if (!require("devtools")){
