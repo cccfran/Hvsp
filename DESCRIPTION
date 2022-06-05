@@ -1,9 +1,9 @@
-Package: HCD
-Title: Hierarchical Community Detection by Recursive Partitioning
+Package: Hvsp
+Title: Hierarchical Vintage Sparse PCA (Hvsp)
 Version: 0.0.0.9000
-Author: Tianxi Li, Lihua Lei, Sharmodeep Bhattacharyya, Purnamrita Sarkar, Peter Bickel, and Elizaveta Levina
-Maintainer: Tianxi Li <tianxili@virginia.edu>
-Description: Hierarchical community detection on networks by a recursive spectral partitioning strategy, which is shown to be effective and efficient in Li, Lei, Bhattacharyya, Sarkar, Bickel, and Levina (2018) <arXiv:1810.01509>. The package also includes a data generating function for a binary tree stochastic block model, a special case of stochastic block model that admits hierarchy between communities.
+Author: Junhui Cai
+Maintainer: Junhui Cai <junhui@wharton.upenn.edu>
+Description: Hierachical vintage sparse PCA that combines hierarchical clustering and vintage sparse PCA. The package is built upon the HCD package by Li et al.
 License: GPL (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -18,7 +18,8 @@ Imports:
     methods,
     stringr,
     dendextend,
-    stats
+    stats,
+    vsp
 Depends: 
     R (>= 2.10)
 LazyData: true

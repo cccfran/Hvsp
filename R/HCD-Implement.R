@@ -4,6 +4,7 @@
 #' @import data.table
 #' @import methods
 #' @import stringr
+#' @import vsp
 #' @importFrom dendextend is.dendrogram nnodes
 #' @importFrom randnet ECV.Rank SBM.estimate
 #' @importFrom irlba irlba
@@ -227,7 +228,7 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
 #' The hierarchical community detection (HCD) by Li et al. (2020).
 #'
 #' @param A input adjacency matrix. Can be standard R matrix or dsCMatrix (or other type in package Matrix)
-#' @param method  splitting method. "SS" (default) -- sign splitting, "SC" -- spectral clustering
+#' @param method  splitting method. "SS" (default) -- sign splitting, "SC" -- spectral clustering, "vsp" -- vintage sparse PCA
 #' @param stopping  stopping rule. "NB" (default) -- non-backtracking matrix spectrum, "ECV" -- edge cross-validation, "Fix"-- fixed D layers of partitioning
 #' ECV is nonparametric rank evaluation by cross-validation -- a more generally applicable approach
 #' without assuming SBM or its variants. Also available for weighted networks.
@@ -238,8 +239,11 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
 #' @param n.min  the algorithm will stop splitting if the current size is <= 2*n.min.
 #' @param D  the number of layers to partition, if stopping=="Fix".
 #' @param notree  if TRUE, will not produce the data.tree object or the community similarity matrix. Only the cluster label and the tree path strings will be returned. This typically makes the runing faster.
+#' @param ... optional arguments for vsp()
 #' @return Output a \code{HCD} object
 #' \describe{
+#'  \item{results}{
+#'  \describe{
 #'  \item{labels}{clustering label}
 #'  \item{ncl}{number of clusters}
 #'  \item{cluster.tree}{cluster tree from data.tree}
@@ -247,6 +251,9 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
 #'  \item{node.bin.sim.mat}{nodes' similarity matrix}
 #'  \item{comm.bin.sim.mat}{clusters' similarity matrix}
 #'  \item{tree.path}{nodes' tree path}
+#'  }
+#'  }
+#'  \item{cent}{centrality/importance score for vsp}
 #' }
 #' @export
 #' @examples
@@ -256,18 +263,19 @@ BTSBM <- function(n,d,a.seq,lambda,alpha=NULL,N=1){
 #'
 #' data(citation)
 #' HCD(citation, method="SS", stopping="NB", notree=F)
-HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TRUE){
+HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TRUE, ...){
   n <- nrow(A)
   ncl <- 0
   xi.loc.labels <- list()
-  if(!any(c("SS","SC")==method)){
-    stop("method can only by one of 'SS' and 'SC'")
+  if(!any(c("SS","SC","vsp")==method)){
+    stop("method can only by one of 'SS', 'SC' or 'vsp'")
   }
   if(!any(c("NB","ECV","Fix")==stopping)){
     stop("stopping can only by one of 'NB','ECV' and 'Fix'")
   }
   message("Begin clustering....")
-  clusters <- break.cl.sp(f=A,method=method, xi.loc.labels=xi.loc.labels, ncl=ncl, cl.labels=1:n,BH=stopping,reg=reg,n.min=n.min,D=D)
+  clusters <- break.cl.sp(f=A,method=method, xi.loc.labels=xi.loc.labels, ncl=ncl, cl.labels=1:n,BH=stopping,reg=reg,n.min=n.min,D=D,...)
+
   ncl <- clusters$ncl
   xi.loc.labels <- clusters$xi.loc.labels
   labels = rep(0, n)
@@ -276,47 +284,55 @@ HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TR
   }
   tree.path <- clusters$tree.path
   if(!notree){
-  message("Finished clustering. Summarizing tree structure....")
-  node.tree.path <- strsplit(tree.path,"/")
-  suppressWarnings(node.index <- which(unlist(lapply(node.tree.path,function(x) sum(!is.na(as.numeric(x)))>0)))) ### find which path string is for individual nodes
-  suppressWarnings(node.number <- unlist(lapply(node.tree.path,function(x) as.numeric(x)[which(!is.na(as.numeric(x)))]))) ### find the specific node name. The non-node string will be removed
-  node.dt <- data.table(node.number=node.number,node.index=node.index)
-  node.dt2 <- unique(node.dt, by = "node.number")
-  node.index <- node.dt2$node.index[sort(node.dt2$node.number,index.return=TRUE)$ix]
-  #Binary.Similarity(node.tree.path[[node.index[1]]],node.tree.path[[node.index[1000]]])
-  representers <- rep(0,ncl)
-  for(i in 1:ncl){
-    representers[i] <- which(labels==i)[1]
-  }
-  community.bin.sim.mat <- matrix(0,ncl,ncl)
-  for(i in 1:ncl){
-    for(j in 1:ncl){
-      if(i==j){
-        community.bin.sim.mat[i,i] <- length(node.tree.path[[node.index[representers[i]]]])
-      }else{
-        community.bin.sim.mat[i,j] <- Binary.Similarity(node.tree.path[[node.index[representers[i]]]],node.tree.path[[node.index[representers[j]]]])
-        community.bin.sim.mat[j,i] <- community.bin.sim.mat[i,j]
+    message("Finished clustering. Summarizing tree structure....")
+    node.tree.path <- strsplit(tree.path,"/")
+    suppressWarnings(node.index <- which(unlist(lapply(node.tree.path,function(x) sum(!is.na(as.numeric(x)))>0)))) ### find which path string is for individual nodes
+    suppressWarnings(node.number <- unlist(lapply(node.tree.path,function(x) as.numeric(x)[which(!is.na(as.numeric(x)))]))) ### find the specific node name. The non-node string will be removed
+    node.dt <- data.table(node.number=node.number,node.index=node.index)
+    node.dt2 <- unique(node.dt, by = "node.number")
+    node.index <- node.dt2$node.index[sort(node.dt2$node.number,index.return=TRUE)$ix]
+    #Binary.Similarity(node.tree.path[[node.index[1]]],node.tree.path[[node.index[1000]]])
+    representers <- rep(0,ncl)
+    for(i in 1:ncl){
+      representers[i] <- which(labels==i)[1]
+    }
+    community.bin.sim.mat <- matrix(0,ncl,ncl)
+    for(i in 1:ncl){
+      for(j in 1:ncl){
+        if(i==j){
+          community.bin.sim.mat[i,i] <- length(node.tree.path[[node.index[representers[i]]]])
+        }else{
+          community.bin.sim.mat[i,j] <- Binary.Similarity(node.tree.path[[node.index[representers[i]]]],node.tree.path[[node.index[representers[j]]]])
+          community.bin.sim.mat[j,i] <- community.bin.sim.mat[i,j]
+        }
       }
     }
-  }
 
-  Z.mat <- matrix(0,n,ncl)
-  Z.mat[cbind(1:n,labels)] <- 1
-  node.bin.sim.mat <- Z.mat%*%community.bin.sim.mat%*%t(Z.mat)
-  diag(node.bin.sim.mat) <- 0
+    Z.mat <- matrix(0,n,ncl)
+    Z.mat[cbind(1:n,labels)] <- 1
+    node.bin.sim.mat <- Z.mat%*%community.bin.sim.mat%*%t(Z.mat)
+    diag(node.bin.sim.mat) <- 0
 
-  tree.path <- paste("All",tree.path,sep="/")
-  tree.df <- data.frame(V1=1:length(tree.path),pathString=tree.path)
-  #print(tree.path)
-  tree.df$pathString <- as.character(tree.df$pathString)
-  cluster.tree <- as.Node(tree.df)
+    tree.path <- paste("All",tree.path,sep="/")
+    tree.df <- data.frame(V1=1:length(tree.path),pathString=tree.path)
+    #print(tree.path)
+    tree.df$pathString <- as.character(tree.df$pathString)
+    cluster.tree <- as.Node(tree.df)
   }else{
-      cluster.tree <- NULL
-      node.bin.sim.mat <- NULL
-      community.bin.sim.mat <- NULL
+    cluster.tree <- NULL
+    node.bin.sim.mat <- NULL
+    community.bin.sim.mat <- NULL
   }
   P.est <- SBM.estimate(A,labels)
-  result <- list(labels=labels,ncl=ncl,cluster.tree=cluster.tree,P=P.est,node.bin.sim.mat=node.bin.sim.mat,comm.bin.sim.mat=community.bin.sim.mat,tree.path=tree.path)
+  result <- list(result = list(labels=labels,
+                               ncl=ncl,
+                               cluster.tree=cluster.tree,
+                               P=P.est,
+                               node.bin.sim.mat=node.bin.sim.mat,
+                               comm.bin.sim.mat=community.bin.sim.mat,
+                               tree.path=tree.path))
+  if(method == "vsp") result <- list(result=result,
+                                     cent=clusters$cent)
 
   return(result)
 }
@@ -324,7 +340,7 @@ HCD <- function(A,method="SS", stopping="NB",reg=FALSE,n.min=25,D=NULL,notree=TR
 
 ## cl.labels is the current node index involved in the function call - this is by sign splitting
 ## use D = maximum level of splitting if want to use HCD-Sign by fixed D with BH is other than "NB" or "ECV"
-break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=FALSE,n.min=25,D=NULL) {
+break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=FALSE,n.min=25,D=NULL,cent=NULL,cent.tmp=NULL, ...) {
   nisol = which(rowSums(f) > 0)
   isol = which(rowSums(f) == 0)
   cl.labels.full <- cl.labels
@@ -332,11 +348,12 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
   if((length(nisol)<=8)||(length(isol)>=5*length(nisol))||(length(nisol)<2*n.min)){
     ncl = ncl + 1
     xi.loc.labels[[ncl]] = cl.labels
+    cent[[ncl]] = cent.tmp
     tree.path <- c("",as.character(cl.labels))
     mod.path <- c(0,rep(0,length(cl.labels)))
     if(length(isol)>0) tree.path <- c(tree.path,as.character(cl.labels[isol]))
     message('Too few connected nodes, not even started!')
-    return(list(xi.loc.labels = xi.loc.labels, ncl = ncl,tree.path=tree.path,mod.path=mod.path))
+    return(list(xi.loc.labels = xi.loc.labels, ncl = ncl,tree.path=tree.path,mod.path=mod.path, cent=cent))
   }
   #print(paste(length(isol),"isolated nodes",cl.labels[isol]))
   all.deg = rowSums(f)
@@ -366,10 +383,13 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
       eig.nf = irlba(f, nu = 2, nv = 2)
     }
     if(method=="SS"){
-    clustering <- rep(0,length(eig.nf$v[,2]))
-    clustering[eig.nf$v[,2]<=0] <- 1
-    clustering[eig.nf$v[,2]>0] <- 2
-    }else{
+      clustering <- rep(0,length(eig.nf$v[,2]))
+      clustering[eig.nf$v[,2]<=0] <- 1
+      clustering[eig.nf$v[,2]>0] <- 2
+    } else if (method == "vsp") {
+      eig.nf <- vsp(f, rank = 2, center = F)
+      clustering <- apply(eig.nf$Y, 1, function(x) which.max(abs(x)))
+    } else{
       if(method=="SC"){
         clustering <- kmeans(eig.nf$v[,1:2],centers=2,iter.max=30,nstart=10)$cluster
       }
@@ -382,32 +402,36 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
     smaller.cluster <- xi.labels[[which.min(sapply(xi.labels,length))]]
     f1 <- f[smaller.cluster,smaller.cluster]
     a1.labels <- cl.labels[smaller.cluster]
+    cent1 <- NULL
+    if(method == "vsp") cent1 <- eig.nf$Y[smaller.cluster,which.min(sapply(xi.labels,length))]
     if(length(dim(f1)) > 0) {
       n1 <- dim(f1)[1]
-      } else if(length(f1) > 0) { ### case when only 1 node is in this cluster, make it 2, so the later on rank check code still works
+    } else if(length(f1) > 0) { ### case when only 1 node is in this cluster, make it 2, so the later on rank check code still works
       n1 <- 1
     } else {
       n1 = 0
     }
     if(n1 > 2*n.min) { ## only do further clustering on cluster larger  2*n.min
-        res = break.cl.sp(f1, method, xi.loc.labels, ncl, a1.labels,BH,reg=reg,n.min,D=D-1)
-        xi.loc.labels = res$xi.loc.labels
-        ncl = res$ncl
-        L.tree.path <- res$tree.path
-        if(length(isol)>0){
-          xi.loc.labels[[ncl]] = c(xi.loc.labels[[ncl]],cl.labels.full[isol]) ### attached the isolated nodes in this level with the clusters under the smaller split
+      res = break.cl.sp(f1, method, xi.loc.labels, ncl, a1.labels,BH,reg=reg,n.min,D=D-1,cent=cent,cent.tmp=cent1,...)
+      xi.loc.labels = res$xi.loc.labels
+      ncl = res$ncl
+      L.tree.path <- res$tree.path
+      cent = res$cent
+      if(length(isol)>0){
+        xi.loc.labels[[ncl]] = c(xi.loc.labels[[ncl]],cl.labels.full[isol]) ### attached the isolated nodes in this level with the clusters under the smaller split
 
-          path.head <- L.tree.path[length(L.tree.path)]
-          path.head <- gsub('[[:digit:]]+', '', path.head)
-          iso.path <- paste(path.head,cl.labels.full[isol],sep="")
-          L.tree.path <- c(L.tree.path,iso.path)
-        }
+        path.head <- L.tree.path[length(L.tree.path)]
+        path.head <- gsub('[[:digit:]]+', '', path.head)
+        iso.path <- paste(path.head,cl.labels.full[isol],sep="")
+        L.tree.path <- c(L.tree.path,iso.path)
+      }
 
-        L.mod.path <- res$mod.path
+      L.mod.path <- res$mod.path
 
     } else {
       ncl = ncl + 1
       xi.loc.labels[[ncl]] = a1.labels
+      cent[[ncl]] = cent1
       if(length(isol)>0) xi.loc.labels[[ncl]] = c(cl.labels.full[isol],xi.loc.labels[[ncl]])
       L.tree.path <- as.character(xi.loc.labels[[ncl]])
       L.mod.path <- rep(0,length(xi.loc.labels[[ncl]]))
@@ -416,6 +440,8 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
     f2 = f[-smaller.cluster, -smaller.cluster]
 
     a2.labels = cl.labels[-smaller.cluster]
+    cent2 <- NULL
+    if(method == "vsp") cent2 <- eig.nf$Y[-smaller.cluster, -which.min(sapply(xi.labels,length))]
     if(length(dim(f2)) > 0) {
       n1 <- nrow(f2)
 
@@ -425,15 +451,17 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
       n1 <- 0
     }
     if(n1 > 2*n.min) {
-      res = break.cl.sp(f2, method, xi.loc.labels, ncl, a2.labels,BH,reg=reg,n.min,D=D-1)
+      res = break.cl.sp(f2, method, xi.loc.labels, ncl, a2.labels,BH,reg=reg,n.min,D=D-1,cent=cent,cent.tmp=cent2, ...)
       xi.loc.labels = res$xi.loc.labels
       R.tree.path <- res$tree.path
       R.mod.path <- res$mod.path
       ncl = res$ncl
+      cent = res$cent
 
     } else {
       ncl = ncl + 1
       xi.loc.labels[[ncl]] = a2.labels
+      cent[[ncl]] = cent2
       R.tree.path <- as.character(a2.labels)
       R.mod.path <- rep(0,length(a2.labels))
       #print('Too small right cluster, Branch End')
@@ -445,11 +473,11 @@ break.cl.sp = function(f, method="SS",xi.loc.labels, ncl, cl.labels,BH="NB",reg=
   } else {
     ncl = ncl + 1
     xi.loc.labels[[ncl]] = cl.labels
+    cent[[ncl]] = cent.tmp
     if(length(isol)>0) xi.loc.labels[[ncl]] = c(cl.labels.full[isol],cl.labels)
     tree.path <- c("",as.character(cl.labels))
     if(length(isol)>0) tree.path <- c(tree.path,as.character(cl.labels.full[isol]))
     #print('One cluster, Branch End, not even started!')
   }
-  return(list(xi.loc.labels = xi.loc.labels, ncl = ncl,tree.path=tree.path))
+  return(list(xi.loc.labels = xi.loc.labels, ncl = ncl,tree.path=tree.path, cent = cent))
 }
-
