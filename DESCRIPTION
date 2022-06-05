@@ -15,8 +15,10 @@ Imports:
     data.table,
     randnet,
     Matrix, 
-    stats, 
-    methods
+    methods,
+    stringr,
+    dendextend,
+    stats
 Depends: 
     R (>= 2.10)
 LazyData: true

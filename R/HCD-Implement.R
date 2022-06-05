@@ -1,5 +1,16 @@
-## the spectral check of non-backtracking matrix for stopping rule
+#' @import Matrix
+#' @import RSpectra
+#' @import data.tree
+#' @import data.table
+#' @import methods
+#' @import stringr
+#' @importFrom dendextend is.dendrogram nnodes
+#' @importFrom randnet ECV.Rank SBM.estimate
+#' @importFrom irlba irlba
+#' @importFrom stats dendrapply kmeans runif
+NULL
 
+## the spectral check of non-backtracking matrix for stopping rule
 NB.check <- function(A){
   d <- colSums(A)
   n <- nrow(A)
